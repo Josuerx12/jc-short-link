@@ -35,6 +35,11 @@ class Links extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function linkStats()
+    {
+        return $this->hasMany(LinkStats::class, 'link_id', 'id');
+    }
+
     protected static function booted(): void
     {
         static::saved(function (Links $link) {

@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('link_stats', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('link_id');
+            $table->foreign('link_id')->references('id')->on('links')->onDelete('cascade');
             $table->timestamp('accessed_at')->useCurrent();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();

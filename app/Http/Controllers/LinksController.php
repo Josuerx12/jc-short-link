@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\LinkResource;
 use App\Models\Links;
+use App\Models\LinkStats;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -15,24 +17,39 @@ class LinksController extends Controller
         $user = $request->user();
         $expiredAtParam = $request->query('expiredAt');
 
+        $query = Links::where('user_id', $user->id)->withCount('linkStats');
+
         if ($expiredAtParam) {
             try {
                 $expiredAt = Carbon::parse($expiredAtParam);
+                $query->where('expires_at', '<', $expiredAt);
             } catch (Exception $e) {
                 return response()->json(['message' => 'Invalid expiredAt parameter'], 400);
             }
-
-            $links = Links::where('expires_at', '<', $expiredAt)
-                ->where('user_id', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->paginate(15);
-
-            return response()->json($links);
         }
 
-        $links = Links::where('user_id', $user->id)->orderBy('created_at', 'desc')->paginate(15);
-        
-        return response()->json($links);
+        $links = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        return LinkResource::collection($links);
+    }
+
+    public function getById(Request $request, string $id)
+    {
+        $includeStats = $request->query('includeStats', true);
+
+        $query = Links::where('id', $id)->where('user_id', $request->user()->id)->withCount(['linkStats as visitsCount']);
+
+        if ($includeStats) {
+            $query->with('linkStats');
+        }
+
+        $link = $query->first();
+
+        if (!$link) {
+            return response()->json(['message' => 'Link not found'], 404);
+        }
+
+        return new LinkResource($link);
     }
 
     public function create(Request $request)
@@ -60,7 +77,7 @@ class LinksController extends Controller
         return response()->json($link, 201);
     }
 
-    public function redirectToOriginalUrl($shortCode)
+    public function redirectToOriginalUrl($shortCode, Request $request)
     {
         $cacheKey = "links:short_code:{$shortCode}";
         $data = Cache::get($cacheKey);
@@ -90,6 +107,15 @@ class LinksController extends Controller
                 return response()->json(['message' => 'Link has expired'], 410);
             }
         }
+
+        $linkStat = LinkStats::create([
+            'link_id' => $data['id'],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->header('User-Agent'),
+        ]);
+
+        $linkStat->save();
+
 
         return redirect($data['original_url']);
     }
