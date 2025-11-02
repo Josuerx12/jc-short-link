@@ -100,7 +100,7 @@ class LinksController extends Controller
 
         $linkStat->save();
 
-        return response()->json(new LinkResource($linkData));
+        return response()->json($linkData);
     }
 
 
