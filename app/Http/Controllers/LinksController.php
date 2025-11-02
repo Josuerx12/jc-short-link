@@ -77,7 +77,7 @@ class LinksController extends Controller
 
         $link->save();
 
-        return response()->json($link, 201);
+        return response()->json(new LinkResource($link), 201);
     }
 
     public function getLinkByShortCode($shortCode, Request $request)
@@ -100,7 +100,7 @@ class LinksController extends Controller
 
         $linkStat->save();
 
-        return response()->json($linkData);
+        return response()->json(new LinkResource($linkData));
     }
 
 
