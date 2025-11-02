@@ -21,7 +21,7 @@ class AuthController extends Controller
             return response()->json(['token' => $token], 200);
         }
 
-        return response()->json(['message' => 'Invalid credentials'], 401);
+        return response()->json(['message' => 'Credenciais inválidas'], 401);
     }
 
     public function me(Request $request)
@@ -29,7 +29,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         if(!$user) {
-             return response()->json(['message' => 'Unauthenticated'], 401);
+             return response()->json(['message' => 'Não autenticado'], 401);
         } 
         
         return response()->json(['user' => $user], 200);
@@ -45,14 +45,14 @@ class AuthController extends Controller
             $token->delete();
         }
 
-        return response()->json(['message' => 'Logged out'], 200);
+        return response()->json(['message' => 'Desconectado com sucesso'], 200);
     }
 
     public function logoutAll(Request $request)
     {
         $request->user()->tokens()->delete();
 
-        return response()->json(['message' => 'Logged out from all devices'], 200);
+        return response()->json(['message' => 'Desconectado de todos os dispositivos'], 200);
     }
 
     public function register(Request $request) 

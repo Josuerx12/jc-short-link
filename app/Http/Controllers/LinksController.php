@@ -24,7 +24,7 @@ class LinksController extends Controller
                 $expiredAt = Carbon::parse($expiredAtParam);
                 $query->where('expires_at', '<', $expiredAt);
             } catch (Exception $e) {
-                return response()->json(['message' => 'Invalid expiredAt parameter'], 400);
+                return response()->json(['message' => 'Parâmetro com data de expiração inválido'], 400);
             }
         }
 
@@ -46,7 +46,7 @@ class LinksController extends Controller
         $link = $query->first();
 
         if (!$link) {
-            return response()->json(['message' => 'Link not found'], 404);
+            return response()->json(['message' => 'Link não encontrado'], 404);
         }
 
         return new LinkResource($link);
@@ -85,11 +85,11 @@ class LinksController extends Controller
         $linkData = $this->getLinkData($shortCode);
 
         if ($linkData === null) {
-            return response()->json(['message' => 'Link not found'], 404);
+            return response()->json(['message' => 'Link não encontrado'], 404);
         }
 
         if ($linkData === 'expired') {
-            return response()->json(['message' => 'Link has expired'], 410);
+            return response()->json(['message' => 'Link expirado'], 410);
         }
 
         $linkStat = LinkStats::create([
