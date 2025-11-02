@@ -137,13 +137,13 @@ class LinksController extends Controller
 
         $data = [
             'id' => $link->id,
-            'original_url' => $link->original_url,
-            'expires_at' => $link->expires_at ? $link->expires_at->toDateTimeString() : null,
+            'originalUrl' => $link->original_url,
+            'expiresAt' => $link->expires_at ? $link->expires_at->toDateTimeString() : null,
         ];
 
         Cache::put($cacheKey, $data, now()->addMinutes(60));
         } else {
-            $expiresAt = $data['expires_at'] ? Carbon::parse($data['expires_at']) : null;
+            $expiresAt = $data['expiresAt'] ? Carbon::parse($data['expiresAt']) : null;
             
             if ($expiresAt && Carbon::now()->greaterThan($expiresAt)) {
                 Cache::forget($cacheKey);
