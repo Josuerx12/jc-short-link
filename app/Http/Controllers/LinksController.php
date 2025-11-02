@@ -54,6 +54,8 @@ class LinksController extends Controller
 
     public function create(Request $request)
     {
+        $user = $request->user();
+
         $validatedData = $request->validate([
             'originalUrl' => 'required|url|max:2048',
         ]);
@@ -65,11 +67,12 @@ class LinksController extends Controller
         $code = substr(md5(uniqid(rand(), true)), 0, 6);
         $link->short_code = $code;
 
-        $link->expires_at = Carbon::now()->addDays(30);
-
-        $user = $request->user();
         if ($user) {
             $link->user_id = $user->id;
+
+            $link->expires_at = Carbon::now()->addDays(30);
+        } else {
+            $link->expires_at = Carbon::now()->addDays(1);
         }
 
         $link->save();

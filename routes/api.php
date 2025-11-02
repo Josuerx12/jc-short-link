@@ -12,13 +12,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Links routes
     Route::get('links', [LinksController::class, 'findAll']);
-    Route::get('links/short/{shortCode}', [LinksController::class, 'getLinkByShortCode']);
     Route::get('links/{id}', [LinksController::class, 'getById']);
-    Route::post('links', [LinksController::class, 'create']);
 });
 
 Route::middleware('guest')->group(function () { 
     // Auth routes
     Route::post('auth/login', [AuthController::class, 'login']);
     Route::post('auth/register', [AuthController::class, 'register']);
+    
+    // Links routes
+    Route::post('links', [LinksController::class, 'create']);
+    Route::get('links/short/{shortCode}', [LinksController::class, 'getLinkByShortCode']);
 });
