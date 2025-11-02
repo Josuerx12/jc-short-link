@@ -35,7 +35,7 @@ class LinksController extends Controller
 
     public function getById(Request $request, string $id)
     {
-        $includeStats = $request->query('includeStats', true);
+        $includeStats = filter_var($request->query('includeStats', true), FILTER_VALIDATE_BOOLEAN);
 
         $query = Links::where('id', $id)->where('user_id', $request->user()->id)->withCount(['linkStats as visitsCount']);
 
@@ -77,7 +77,46 @@ class LinksController extends Controller
         return response()->json($link, 201);
     }
 
+    public function getLinkByShortCode($shortCode, Request $request)
+    {
+        $linkData = $this->getLinkData($shortCode);
+
+        if ($linkData === null) {
+            return response()->json(['message' => 'Link not found'], 404);
+        }
+
+        if ($linkData === 'expired') {
+            return response()->json(['message' => 'Link has expired'], 410);
+        }
+
+        $linkStat = LinkStats::create([
+            'link_id' => $linkData['id'],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->header('User-Agent'),
+        ]);
+
+        $linkStat->save();
+
+        return response()->json($linkData);
+    }
+
+
     public function redirectToOriginalUrl($shortCode, Request $request)
+    {
+        $linkData = $this->getLinkData($shortCode);
+
+        $linkStat = LinkStats::create([
+            'link_id' => $linkData['id'],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->header('User-Agent'),
+        ]);
+
+        $linkStat->save();
+
+        return redirect($linkData['original_url']);
+    }
+
+    private function getLinkData($shortCode)
     {
         $cacheKey = "links:short_code:{$shortCode}";
         $data = Cache::get($cacheKey);
@@ -85,38 +124,30 @@ class LinksController extends Controller
         if (! $data) {
             $link = Links::where('short_code', $shortCode)->first();
 
-            if (! $link) {
-                return response()->json(['message' => 'Link not found'], 404);
-            }
+        if (! $link) {
+            return null;
+        }
 
-            if ($link->expires_at && Carbon::now()->greaterThan($link->expires_at)) {
-                return response()->json(['message' => 'Link has expired'], 410);
-            }
+        if ($link->expires_at && Carbon::now()->greaterThan($link->expires_at)) {
+            return 'expired';
+        }
 
-            $data = [
-                'id' => $link->id,
-                'original_url' => $link->original_url,
-                'expires_at' => $link->expires_at ? $link->expires_at->toDateTimeString() : null,
-            ];
+        $data = [
+            'id' => $link->id,
+            'original_url' => $link->original_url,
+            'expires_at' => $link->expires_at ? $link->expires_at->toDateTimeString() : null,
+        ];
 
-            Cache::put($cacheKey, $data, now()->addMinutes(60));
+        Cache::put($cacheKey, $data, now()->addMinutes(60));
         } else {
             $expiresAt = $data['expires_at'] ? Carbon::parse($data['expires_at']) : null;
+            
             if ($expiresAt && Carbon::now()->greaterThan($expiresAt)) {
                 Cache::forget($cacheKey);
-                return response()->json(['message' => 'Link has expired'], 410);
+                return 'expired';
             }
         }
 
-        $linkStat = LinkStats::create([
-            'link_id' => $data['id'],
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->header('User-Agent'),
-        ]);
-
-        $linkStat->save();
-
-
-        return redirect($data['original_url']);
+        return $data;
     }
 }
