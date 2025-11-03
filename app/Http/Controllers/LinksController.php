@@ -80,51 +80,6 @@ class LinksController extends Controller
         return response()->json(new LinkResource($link), 201);
     }
 
-    public function overview(Request $request) 
-    {
-        $user = $request->user();
-
-        $totalLinks = Links::where('user_id', $user->id)->count();
-        $activeLinks = Links::where('user_id', $user->id)
-            ->where(function ($qr) {
-                    $qr
-                        ->whereNull('expires_at')
-                        ->orWhere('expires_at', '>', Carbon::now());
-                })->count();
-        $expiredLinks = $totalLinks - $activeLinks;
-        
-        $linkIds = Links::where('user_id', $user->id)->pluck('id');
-
-        $totalClicks = LinkStats::whereIn('link_id', $linkIds)->count();
-        $clicksToday = LinkStats::whereIn('link_id', $linkIds)->whereDate('created_at', today())->count();
-        $avgClicksPerLink = $totalLinks ? round($totalClicks / $totalLinks, 2) : 0;
-
-        $topLink = LinkStats::selectRaw('link_id, count(*) as clicks')
-                    ->whereIn('link_id', $linkIds)
-                    ->groupBy('link_id')
-                    ->orderByDesc('clicks')
-                    ->limit(1)
-                    ->pluck('link_id','clicks')
-                    ->first();
-        
-        $lastCreated = Links::where('user_id', $user->id)
-            ->orderByDesc('created_at')
-            ->first();
-
-        $data = [
-            'totalLinks' => $totalLinks,
-            'activeLinks' => $activeLinks,
-            'expiredLinks' => $expiredLinks,
-            'totalClicks' => $totalClicks,
-            'clicksToday' => $clicksToday,
-            'avgClicksPerLink' => $avgClicksPerLink,
-            'topLink' => $topLink ? new LinkResource(Links::find($topLink)) : null,
-            'lastCreatedLink' => $lastCreated ? new LinkResource($lastCreated) : null,
-        ];
-
-        return response()->json($data);
-    }
-
     public function getLinkByShortCode($shortCode, Request $request)
     {
         $linkData = $this->getLinkData($shortCode);

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LinksController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Links routes
     Route::get('links', [LinksController::class, 'findAll']);
     Route::get('links/{id}', [LinksController::class, 'getById']);
+
+    // Dashboard
+
+    Route::get('dashboard/overview', [DashboardController::class, 'overview']);
 });
 
 Route::middleware('guest')->group(function () { 
@@ -21,6 +26,7 @@ Route::middleware('guest')->group(function () {
     Route::post('auth/register', [AuthController::class, 'register']);
     
     // Links routes
-    Route::post('links', [LinksController::class, 'create']);
     Route::get('links/short/{shortCode}', [LinksController::class, 'getLinkByShortCode']);
 });
+
+Route::middleware('optional.auth')->post('links', [LinksController::class, 'create']);
